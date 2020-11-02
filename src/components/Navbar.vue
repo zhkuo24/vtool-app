@@ -52,12 +52,6 @@
           </template>
         </v-list-item-group>
       </v-list>
-
-      <v-footer absolute>
-        <v-row justify="center">
-          <span class="font-weight-light caption">&copy; 2020</span>
-        </v-row>
-      </v-footer>
     </v-navigation-drawer>
   </nav>
 </template>

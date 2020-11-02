@@ -2,7 +2,9 @@
   <v-app>
     <Navbar />
     <v-main class="grey lighten-4">
-      <router-view></router-view>
+      <v-container fluid>
+        <router-view></router-view>
+      </v-container>
     </v-main>
   </v-app>
 </template>
