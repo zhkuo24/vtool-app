@@ -67,8 +67,8 @@ export default {
     item: 5,
     items: [
       {
-        icon: "mdi-content-cut",
-        text: "视频裁剪",
+        icon: "mdi-video-box",
+        text: "视频处理",
         route: "/"
       },
       { icon: "mdi-robot", text: "深度学习", route: "/dl" },

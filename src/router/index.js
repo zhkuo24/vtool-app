@@ -1,14 +1,14 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
-import Vcrop from "../views/Vcrop";
+import VProcess from "../views/VProcess";
 
 Vue.use(VueRouter);
 
 const routes = [
   {
     path: "/",
-    name: "vcrop",
-    component: Vcrop
+    name: "vprocess",
+    component: VProcess
   },
   {
     path: "/about",
