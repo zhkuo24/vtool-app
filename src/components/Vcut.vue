@@ -44,7 +44,6 @@
               prepend-inner-icon="mdi-file-excel"
               v-model="exclefile_path"
               :class="file_isfinished"
-              @blur="blur_test"
             >
               <template v-slot:append-outer>
                 <v-btn
@@ -65,7 +64,7 @@
         </v-row>
         <v-row justify="center" class="mt-3">
           <v-col cols="4">
-            <v-btn outlined color="primary" disabled>
+            <v-btn outlined color="primary" :disabled="btn_disabled">
               <v-icon left>mdi-play-box</v-icon> 开始处理
             </v-btn>
           </v-col>
@@ -75,8 +74,6 @@
             <v-text-field
               background-color="grey lighten-4"
               value="处理中..."
-              flat
-              outlined
               dense
               solo
               :append-icon="append_icon"
@@ -102,11 +99,31 @@ export default {
     return {
       video_path: "",
       exclefile_path: "",
-      video_isfinished: "",
-      file_isfinished: "",
       isShow: true,
       append_icon: "mdi-check-circle" //"mdi-spin mdi-loading"
     };
+  },
+  computed: {
+    video_isfinished: {
+      get() {
+        return this.video_path == "" ? "" : "finish_video";
+      },
+      set() {}
+    },
+    file_isfinished: {
+      get() {
+        return this.exclefile_path == "" ? "" : "finish_file";
+      },
+      set() {}
+    },
+    btn_disabled: {
+      get() {
+        return this.exclefile_path == "" || this.video_path == ""
+          ? true
+          : false;
+      },
+      set() {}
+    }
   },
   methods: {
     choose_video_path: function() {
@@ -124,13 +141,6 @@ export default {
         .catch(err => {
           dialog.showErrorBox("出错啦", err);
         });
-    },
-    blur_test: function() {
-      if (this.exclefile_path == "") {
-        this.file_isfinished = "";
-      } else {
-        this.file_isfinished = "choose";
-      }
     },
 
     choose_file_path: function() {
@@ -158,15 +168,14 @@ export default {
 </script>
 
 <style>
-.choose .theme--light.v-icon {
+.finish_file .mdi-file-excel {
+  color: #1976d2;
+}
+.finish_video .mdi-file-video {
   color: #1976d2;
 }
 
 .v-input__append-inner .mdi.theme--light {
   color: #1976d2;
-}
-
-.btnrow {
-  margin-left: 95px;
 }
 </style>
