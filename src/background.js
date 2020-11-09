@@ -80,3 +80,14 @@ if (isDevelopment) {
     });
   }
 }
+
+// 业务逻辑
+
+const getCpu = require("../src/main_process/systeminfo");
+const ipc = require("electron").ipcMain;
+
+ipc.on("get_cpu_info", function(event) {
+  console.log("收到消息");
+  event.sender.send("cpu_info_reply", getCpu());
+  console.log("发出消息");
+});

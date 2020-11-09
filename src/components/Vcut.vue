@@ -64,7 +64,12 @@
         </v-row>
         <v-row justify="center" class="mt-3">
           <v-col cols="4">
-            <v-btn outlined color="primary" :disabled="btn_disabled">
+            <v-btn
+              outlined
+              color="primary"
+              :disabled="btn_disabled"
+              @click="start_process"
+            >
               <v-icon left>mdi-play-box</v-icon> 开始处理
             </v-btn>
           </v-col>
@@ -73,7 +78,7 @@
           <v-col cols="11">
             <v-text-field
               background-color="grey lighten-4"
-              value="处理中..."
+              v-model="process_info"
               dense
               solo
               :append-icon="append_icon"
@@ -93,6 +98,11 @@
 
 <script>
 const { dialog } = require("electron").remote;
+const ipc = require("electron").ipcRenderer;
+// const obj = require("electron").remote.require(
+//   "../src/main_process/systemInfo.js"
+// );
+// const cpuInfo = obj.getCpu();
 
 export default {
   data: function() {
@@ -100,6 +110,7 @@ export default {
       video_path: "",
       exclefile_path: "",
       isShow: true,
+      process_info: "处理中...",
       append_icon: "mdi-check-circle" //"mdi-spin mdi-loading"
     };
   },
@@ -126,6 +137,9 @@ export default {
     }
   },
   methods: {
+    start_process: function() {
+      ipc.send("get_cpu_info");
+    },
     choose_video_path: function() {
       dialog
         .showOpenDialog({
@@ -163,6 +177,12 @@ export default {
           dialog.showErrorBox("出错啦", err);
         });
     }
+  },
+  created() {
+    ipc.on("cpu_info_reply", function(arg) {
+      console.log("ssdfagfad");
+      this.process_info = arg;
+    });
   }
 };
 </script>
