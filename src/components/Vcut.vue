@@ -98,14 +98,10 @@
 
 <script>
 const { dialog } = require("electron").remote;
-const ipc = require("electron").ipcRenderer;
-// const obj = require("electron").remote.require(
-//   "../src/main_process/systemInfo.js"
-// );
-// const cpuInfo = obj.getCpu();
+const { ipcRenderer } = require("electron");
 
 export default {
-  data: function() {
+  data() {
     return {
       video_path: "",
       exclefile_path: "",
@@ -113,6 +109,12 @@ export default {
       process_info: "处理中...",
       append_icon: "mdi-check-circle" //"mdi-spin mdi-loading"
     };
+  },
+  created() {
+    let self = this;
+    ipcRenderer.on("cpu_info_reply", function(event, arg) {
+      self.set_processinfo(arg);
+    });
   },
   computed: {
     video_isfinished: {
@@ -130,7 +132,7 @@ export default {
     btn_disabled: {
       get() {
         return this.exclefile_path == "" || this.video_path == ""
-          ? true
+          ? false
           : false;
       },
       set() {}
@@ -138,7 +140,11 @@ export default {
   },
   methods: {
     start_process: function() {
-      ipc.send("get_cpu_info");
+      // this.process_info = "start_process";
+      ipcRenderer.send("get_cpu_info");
+    },
+    set_processinfo(info) {
+      this.process_info = info;
     },
     choose_video_path: function() {
       dialog
@@ -177,12 +183,6 @@ export default {
           dialog.showErrorBox("出错啦", err);
         });
     }
-  },
-  created() {
-    ipc.on("cpu_info_reply", function(arg) {
-      console.log("ssdfagfad");
-      this.process_info = arg;
-    });
   }
 };
 </script>

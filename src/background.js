@@ -21,7 +21,8 @@ async function createWindow() {
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
       // nodeIntegration: process.env.ELECTRON_NODE_INTEGRATION,
       nodeIntegration: true,
-      enableRemoteModule: true
+      enableRemoteModule: true,
+      webSecurity: false
     }
   });
 
@@ -83,11 +84,9 @@ if (isDevelopment) {
 
 // 业务逻辑
 
-const getCpu = require("../src/main_process/systeminfo");
-const ipc = require("electron").ipcMain;
+const obj = require("../src/main_process/systemInfo");
+const ipcMain = require("electron").ipcMain;
 
-ipc.on("get_cpu_info", function(event) {
-  console.log("收到消息");
-  event.sender.send("cpu_info_reply", getCpu());
-  console.log("发出消息");
+ipcMain.on("get_cpu_info", function(event) {
+  event.sender.send("cpu_info_reply", obj.getCpu());
 });
