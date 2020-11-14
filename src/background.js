@@ -83,10 +83,10 @@ if (isDevelopment) {
 }
 
 // 业务逻辑
-
-const obj = require("../src/main_process/systemInfo");
+const vcut = require("../src/main_process/video_cut");
 const ipcMain = require("electron").ipcMain;
 
-ipcMain.on("get_cpu_info", function(event) {
-  event.sender.send("cpu_info_reply", obj.getCpu());
+ipcMain.on("start_cut", (event, msg) => {
+  console.log(msg);
+  vcut.start_cut_video(msg.excel_path, msg.video_fold);
 });

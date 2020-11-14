@@ -140,8 +140,12 @@ export default {
   },
   methods: {
     start_process: function() {
-      // this.process_info = "start_process";
-      ipcRenderer.send("get_cpu_info");
+      // 获取文件路径和文件夹路径
+      let msg = {
+        excel_path: this.exclefile_path,
+        video_fold: this.video_path
+      };
+      ipcRenderer.send("start_cut", msg);
     },
     set_processinfo(info) {
       this.process_info = info;
