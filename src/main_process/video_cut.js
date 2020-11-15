@@ -2,6 +2,7 @@ const xlsx = require("xlsx");
 const ffmpeg = require("fluent-ffmpeg");
 const path = require("path"); // node内置模块。
 const fs = require("fs");
+var { BrowserWindow } = require("electron");
 // const performance = require("perf_hooks").performance;
 
 // function get_timestamp() {
@@ -38,26 +39,61 @@ function read_xlsx(xlsx_path) {
   return data;
 }
 
-function video_cut(video_path, start_time, duration, out_file_path) {
+function video_cut(
+  video_path,
+  start_time,
+  duration,
+  out_file_path,
+  video_idx,
+  video_nums
+) {
+  let win = BrowserWindow.getFocusedWindow();
+  let process_msg = {
+    idx: 0,
+    total: 0,
+    start_flag: false,
+    progress: 0,
+    done_flag: false,
+    err_flag: false,
+    err_msg: null
+  };
+  let progress_seconds = 0;
+  let progress_percent = 0.0;
   ffmpeg(video_path)
     .setStartTime(start_time)
     .setDuration(duration)
     .output(out_file_path)
     .videoCodec("libx264")
-    .on("start", function(commandLine) {
-      console.log("Spawned ffmpeg with command: " + commandLine);
+    .on("start", function() {
+      // console.log("Spawned ffmpeg with command: " + commandLine);
+      process_msg.start_flag = true;
+      process_msg.idx = video_idx;
+      process_msg.total = video_nums;
+      win.webContents.send("progress_msg", process_msg);
     })
     .on("progress", function(progress) {
-      console.log("processing: " + progress.timemark + "% done");
+      //主进程直接向渲染进程广播
+      // console.log(BrowserWindow.getFocusedWindow());
+      progress_seconds = get_seconds(progress.timemark);
+      progress_percent = Math.round((progress_seconds / duration) * 100);
+      if (progress_percent > 100) {
+        progress_percent = 100;
+      }
+      process_msg.progress = progress_percent;
+      win.webContents.send("progress_msg", process_msg);
+      // console.log("processing: " + progress.timemark + "% done");
     })
 
     .on("end", function(err) {
       if (!err) {
-        console.log("conversion Done");
+        process_msg.done_flag = true;
+        win.webContents.send("progress_msg", process_msg);
       }
     })
     .on("error", function(err) {
-      console.log("error: ", +err);
+      process_msg.err_msg = err;
+      process_msg.err_flag = true;
+      win.webContents.send("progress_msg", process_msg);
     })
     .run();
 }
@@ -89,8 +125,14 @@ function start_cut_video(excel_file_path, video_fold) {
       result_path,
       crop_info.FileName.split(".")[0] + clip + ".mp4"
     );
-    console.debug(video_file_path, start_time, duration, out_file_path);
-    video_cut(video_file_path, start_time, duration, out_file_path);
+    video_cut(
+      video_file_path,
+      start_time,
+      duration,
+      out_file_path,
+      i,
+      video_clip_nums
+    );
   });
 }
 

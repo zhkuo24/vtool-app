@@ -115,6 +115,9 @@ export default {
     ipcRenderer.on("cpu_info_reply", function(event, arg) {
       self.set_processinfo(arg);
     });
+    ipcRenderer.on("progress_msg", function(event, arg) {
+      console.log("progress_msg", arg);
+    });
   },
   computed: {
     video_isfinished: {
