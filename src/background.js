@@ -86,7 +86,17 @@ if (isDevelopment) {
 const vcut = require("../src/main_process/video_cut");
 const ipcMain = require("electron").ipcMain;
 
-ipcMain.on("start_cut", (event, msg) => {
-  console.log(msg);
-  vcut.start_cut_video(msg.excel_path, msg.video_fold);
+ipcMain.on("video_cut_prepare", (event, msg) => {
+  let prepare_result = vcut.prepare_for_cut(msg.video_path, msg.excelfile_path);
+  event.sender.send("video_cut_prepare_result", prepare_result);
+});
+
+ipcMain.on("video_cut", (event, msg) => {
+  vcut.video_cut(
+    msg.video_path,
+    msg.start_time,
+    msg.duration,
+    msg.out_file_path,
+    msg.current_video_idx
+  );
 });

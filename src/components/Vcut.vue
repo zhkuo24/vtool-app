@@ -14,6 +14,7 @@
               prepend-inner-icon="mdi-file-video"
               v-model="video_path"
               :class="video_isfinished"
+              :disabled="video_path_disabled"
             >
               <template v-slot:append-outer>
                 <v-btn
@@ -25,6 +26,7 @@
                   width="35px"
                   height="35px"
                   @click="choose_video_path"
+                  :disabled="path_btn_disabled"
                 >
                   <v-icon>mdi-plus</v-icon>
                 </v-btn>
@@ -42,8 +44,9 @@
               single-line
               label="Excel文件路径"
               prepend-inner-icon="mdi-file-excel"
-              v-model="exclefile_path"
+              v-model="excelfile_path"
               :class="file_isfinished"
+              :disabled="file_path_disabled"
             >
               <template v-slot:append-outer>
                 <v-btn
@@ -55,6 +58,7 @@
                   width="35px"
                   height="35px"
                   @click="choose_file_path"
+                  :disabled="file_btn_disabled"
                 >
                   <v-icon>mdi-plus</v-icon>
                 </v-btn>
@@ -67,7 +71,7 @@
             <v-btn
               outlined
               color="primary"
-              :disabled="btn_disabled"
+              :disabled="start_btn_disabled"
               @click="start_process"
             >
               <v-icon left>mdi-play-box</v-icon> 开始处理
@@ -76,17 +80,24 @@
         </v-row>
         <v-row justify="center" :class="{ 'd-none': !isShow }" class="mt-6">
           <v-col cols="11">
-            <v-text-field
+            <v-progress-linear :value="percent" height="15"
+              >{{ Math.ceil(percent) }}%</v-progress-linear
+            >
+            <!-- <v-text-field
               background-color="grey lighten-4"
               v-model="process_info"
               dense
               solo
               :append-icon="append_icon"
               readonly
-            ></v-text-field>
+            ></v-text-field> -->
           </v-col>
-          <v-col cols="1" class="  mt-n1 ml-n3">
-            <v-progress-circular size="42" color="primary" value="30" width="4"
+          <v-col cols="1" class="  mt-n3 ml-n1">
+            <v-progress-circular
+              size="40"
+              color="primary"
+              :value="progress_percent"
+              width="4"
               ><div class="text-caption">1/45</div></v-progress-circular
             >
           </v-col>
@@ -97,17 +108,29 @@
 </template>
 
 <script>
-const { dialog } = require("electron").remote;
+// const { dialog, fs, path } = require("electron").remote;
+const remote = require("electron").remote;
+const dialog = remote.dialog;
+
 const { ipcRenderer } = require("electron");
 
+const vcut = require("../main_process/video_cut");
 export default {
   data() {
     return {
       video_path: "",
-      exclefile_path: "",
+      excelfile_path: "",
       isShow: true,
       process_info: "处理中...",
-      append_icon: "mdi-check-circle" //"mdi-spin mdi-loading"
+      append_icon: "mdi-check-circle", //"mdi-spin mdi-loading"
+      crop_infos: null,
+      current_video_idx: 0,
+      video_clip_nums: 0,
+      cut_start_flag: false,
+      cut_done_flag: false,
+      result_path: "",
+      progress_percent: 0,
+      percent: 0
     };
   },
   created() {
@@ -115,8 +138,47 @@ export default {
     ipcRenderer.on("cpu_info_reply", function(event, arg) {
       self.set_processinfo(arg);
     });
-    ipcRenderer.on("progress_msg", function(event, arg) {
-      console.log("progress_msg", arg);
+    ipcRenderer.on("video_cut_prepare_result", function(event, msg) {
+      self.crop_infos = msg.crop_infos;
+      self.video_clip_nums = msg.video_clip_nums;
+      self.result_path = msg.result_path;
+      self.current_video_idx = 0;
+      let crop_info = self.crop_infos[self.current_video_idx];
+      let video_cut_msg = vcut.generate_cut_msg(
+        self.current_video_idx,
+        self.video_path,
+        self.result_path,
+        crop_info
+      );
+
+      ipcRenderer.send("video_cut", video_cut_msg);
+    });
+    ipcRenderer.on("progress_msg", function(event, msg) {
+      let done_flag = msg.done_flag;
+      self.current_video_idx = msg.current_video_idx;
+      if (self.current_video_idx >= self.video_clip_nums) {
+        self.cut_start_flag = false;
+        self.cut_done_flag = true;
+      } else {
+        if (done_flag) {
+          self.percent = 0;
+          this.progress_percent = Math.round(
+            (self.current_video_idx / self.video_clip_nums) * 100
+          );
+          let crop_info = self.crop_infos[self.current_video_idx];
+          let video_cut_msg = vcut.generate_cut_msg(
+            self.current_video_idx,
+            self.video_path,
+            self.result_path,
+            crop_info
+          );
+          ipcRenderer.send("video_cut", video_cut_msg);
+        } else {
+          //更新状态
+          // console.log("progress_percent: ", msg.progress);
+          self.percent = msg.progress;
+        }
+      }
     });
   },
   computed: {
@@ -128,28 +190,59 @@ export default {
     },
     file_isfinished: {
       get() {
-        return this.exclefile_path == "" ? "" : "finish_file";
+        return this.excelfile_path == "" ? "" : "finish_file";
       },
       set() {}
     },
-    btn_disabled: {
+    start_btn_disabled: {
       get() {
-        return this.exclefile_path == "" || this.video_path == ""
-          ? false
-          : false;
+        let flag1 = this.excelfile_path == "" || this.video_path == "";
+        let flag2 = this.cut_start_flag;
+        return flag1 || flag2 ? true : false;
+      },
+      set() {}
+    },
+    file_btn_disabled: {
+      get() {
+        return this.cut_start_flag ? true : false;
+      },
+      set() {}
+    },
+    file_path_disabled: {
+      get() {
+        return this.cut_start_flag ? true : false;
+      },
+      set() {}
+    },
+    video_path_disabled: {
+      get() {
+        return this.cut_start_flag ? true : false;
+      },
+      set() {}
+    },
+    path_btn_disabled: {
+      get() {
+        return this.cut_start_flag ? true : false;
       },
       set() {}
     }
   },
   methods: {
     start_process: function() {
-      // 获取文件路径和文件夹路径
       let msg = {
-        excel_path: this.exclefile_path,
-        video_fold: this.video_path
+        video_path: "",
+        excelfile_path: ""
       };
-      ipcRenderer.send("start_cut", msg);
+      this.isShow = true;
+      msg.video_path = this.video_path;
+      msg.excelfile_path = this.excelfile_path;
+      this.cut_start_flag = true;
+      this.cut_done_flag = false;
+      ipcRenderer.send("video_cut_prepare", msg);
+      this.progress_percent = 0;
+      this.percent = 0;
     },
+
     set_processinfo(info) {
       this.process_info = info;
     },
@@ -180,8 +273,8 @@ export default {
         })
         .then(result => {
           if (!result.canceled) {
-            this.exclefile_path = result.filePaths[0];
-            if (this.exclefile_path == "") {
+            this.excelfile_path = result.filePaths[0];
+            if (this.excelfile_path == "") {
               console.log("请输入值");
             }
           }
