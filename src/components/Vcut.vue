@@ -159,25 +159,26 @@ export default {
     ipcRenderer.on("progress_msg", function(event, msg) {
       let done_flag = msg.done_flag;
       self.current_video_idx = msg.current_video_idx;
-      if (self.current_video_idx >= self.video_clip_nums) {
-        self.cut_start_flag = false;
-        self.cut_done_flag = true;
-        dialog
-          .showMessageBox({
-            type: "info",
-            title: "处理完成",
-            message:
-              "视频全部处理完成，共" + self.video_clip_nums + "个视频片段！",
-            buttons: ["确定"]
-          })
-          .then(() => {
-            self.isShow = false;
-          })
-          .catch(err => {
-            console.debug(err);
-          });
-      } else {
-        if (done_flag) {
+
+      if (done_flag) {
+        if (self.current_video_idx >= self.video_clip_nums) {
+          self.cut_start_flag = false;
+          self.cut_done_flag = true;
+          dialog
+            .showMessageBox({
+              type: "info",
+              title: "处理完成",
+              message:
+                "视频全部处理完成，共" + self.video_clip_nums + "个视频片段！",
+              buttons: ["确定"]
+            })
+            .then(() => {
+              self.isShow = false;
+            })
+            .catch(err => {
+              console.debug(err);
+            });
+        } else {
           self.percent = 0;
           let crop_info = self.crop_infos[self.current_video_idx];
           let video_cut_msg = vcut.generate_cut_msg(
@@ -187,11 +188,11 @@ export default {
             crop_info
           );
           ipcRenderer.send("video_cut", video_cut_msg);
-        } else {
-          //更新状态
-          // console.log("progress_percent: ", msg.progress);
-          self.percent = msg.progress;
         }
+      } else {
+        //更新状态
+        // console.log("progress_percent: ", msg.progress);
+        self.percent = msg.progress;
       }
     });
   },
