@@ -95,7 +95,7 @@ function video_cut(
   out_file_path,
   current_idx
 ) {
-  console.debug(out_file_path, current_idx);
+  // console.debug(out_file_path, current_idx);
   let win = BrowserWindow.getFocusedWindow();
   let process_msg = {
     idx: 0,
@@ -123,7 +123,6 @@ function video_cut(
     })
     .on("progress", function(progress) {
       //主进程直接向渲染进程广播
-      // console.log(BrowserWindow.getFocusedWindow());
       progress_seconds = get_seconds(progress.timemark);
       progress_percent = Math.round((progress_seconds / duration) * 100);
       if (progress_percent > 100) {
@@ -161,44 +160,6 @@ function prepare_for_cut(video_path, excelfile_path) {
     result_path: result_path
   };
 }
-
-// function start_cut_video(excel_file_path, video_fold) {
-//   // 读取 Excel 中的视频及剪切时间片段信息
-//   let crop_infos = read_xlsx(excel_file_path);
-//   let video_clip_nums = crop_infos.length;
-//   // let timestamp = get_timestamp();
-//   let result_path = video_fold + "-剪切结果";
-//   // 创建存放结果的文件
-//   console.log(result_path);
-//   // fs.mkdir(result_path, { recursive: true });
-//   fs.mkdir(result_path, { recursive: true }, err => {
-//     if (err) throw err;
-//   });
-//   crop_infos.forEach((crop_info, i) => {
-//     // 处理裁剪每个视频片段
-//     console.debug("第" + i + "个，一共" + video_clip_nums + "个 ");
-//     let fname = crop_info.FileName;
-//     let tmp_time_str = crop_info.Time;
-//     let clip = crop_info.Clip;
-//     let video_file_path = path.join(video_fold, fname);
-//     let times = tmp_time_str.split("-");
-//     let start_time = times[0];
-//     let end_time = times[1];
-//     let duration = get_seconds(end_time) - get_seconds(start_time);
-//     let out_file_path = path.join(
-//       result_path,
-//       crop_info.FileName.split(".")[0] + clip + ".mp4"
-//     );
-//     video_cut(
-//       video_file_path,
-//       start_time,
-//       duration,
-//       out_file_path,
-//       i,
-//       video_clip_nums
-//     );
-//   });
-// }
 
 module.exports = {
   prepare_for_cut,

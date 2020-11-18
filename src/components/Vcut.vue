@@ -81,7 +81,9 @@
         <v-row justify="center" :class="{ 'd-none': !isShow }" class="mt-6">
           <v-col cols="11">
             <v-progress-linear :value="percent" height="15"
-              >{{ Math.ceil(percent) }}%</v-progress-linear
+              ><div class="text-caption">
+                {{ Math.ceil(percent) }}%
+              </div></v-progress-linear
             >
             <!-- <v-text-field
               background-color="grey lighten-4"
@@ -98,7 +100,13 @@
               color="primary"
               :value="progress_percent"
               width="4"
-              ><div class="text-caption">1/45</div></v-progress-circular
+              ><div class="text-caption">
+                {{
+                  current_video_idx + 1 > video_clip_nums
+                    ? video_clip_nums
+                    : current_video_idx + 1
+                }}/{{ video_clip_nums }}
+              </div></v-progress-circular
             >
           </v-col>
         </v-row>
@@ -108,7 +116,6 @@
 </template>
 
 <script>
-// const { dialog, fs, path } = require("electron").remote;
 const remote = require("electron").remote;
 const dialog = remote.dialog;
 
@@ -120,8 +127,8 @@ export default {
     return {
       video_path: "",
       excelfile_path: "",
-      isShow: true,
-      process_info: "处理中...",
+      isShow: false,
+      // process_info: "处理中...",
       append_icon: "mdi-check-circle", //"mdi-spin mdi-loading"
       crop_infos: null,
       current_video_idx: 0,
@@ -129,15 +136,11 @@ export default {
       cut_start_flag: false,
       cut_done_flag: false,
       result_path: "",
-      progress_percent: 0,
       percent: 0
     };
   },
   created() {
     let self = this;
-    ipcRenderer.on("cpu_info_reply", function(event, arg) {
-      self.set_processinfo(arg);
-    });
     ipcRenderer.on("video_cut_prepare_result", function(event, msg) {
       self.crop_infos = msg.crop_infos;
       self.video_clip_nums = msg.video_clip_nums;
@@ -159,12 +162,23 @@ export default {
       if (self.current_video_idx >= self.video_clip_nums) {
         self.cut_start_flag = false;
         self.cut_done_flag = true;
+        dialog
+          .showMessageBox({
+            type: "info",
+            title: "处理完成",
+            message:
+              "视频全部处理完成，共" + self.video_clip_nums + "个视频片段！",
+            buttons: ["确定"]
+          })
+          .then(() => {
+            self.isShow = false;
+          })
+          .catch(err => {
+            console.debug(err);
+          });
       } else {
         if (done_flag) {
           self.percent = 0;
-          this.progress_percent = Math.round(
-            (self.current_video_idx / self.video_clip_nums) * 100
-          );
           let crop_info = self.crop_infos[self.current_video_idx];
           let video_cut_msg = vcut.generate_cut_msg(
             self.current_video_idx,
@@ -225,6 +239,15 @@ export default {
         return this.cut_start_flag ? true : false;
       },
       set() {}
+    },
+    progress_percent: {
+      get() {
+        // return 0;
+        return Math.round(
+          ((this.current_video_idx + 1) / this.video_clip_nums) * 100
+        );
+      },
+      set() {}
     }
   },
   methods: {
@@ -233,19 +256,19 @@ export default {
         video_path: "",
         excelfile_path: ""
       };
+      let crop_infos = vcut.read_xlsx(this.excelfile_path);
+      let video_clip_nums = crop_infos.length;
+      this.video_clip_nums = video_clip_nums;
+      this.progress_percent = 0;
       this.isShow = true;
       msg.video_path = this.video_path;
       msg.excelfile_path = this.excelfile_path;
       this.cut_start_flag = true;
       this.cut_done_flag = false;
       ipcRenderer.send("video_cut_prepare", msg);
-      this.progress_percent = 0;
       this.percent = 0;
     },
 
-    set_processinfo(info) {
-      this.process_info = info;
-    },
     choose_video_path: function() {
       dialog
         .showOpenDialog({
@@ -275,7 +298,7 @@ export default {
           if (!result.canceled) {
             this.excelfile_path = result.filePaths[0];
             if (this.excelfile_path == "") {
-              console.log("请输入值");
+              console.debug("请输入值");
             }
           }
         })
