@@ -164,6 +164,7 @@ export default {
         if (self.current_video_idx >= self.video_clip_nums) {
           self.cut_start_flag = false;
           self.cut_done_flag = true;
+          self.percent = 100;
           dialog
             .showMessageBox({
               type: "info",

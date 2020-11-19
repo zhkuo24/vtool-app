@@ -1,6 +1,6 @@
 const xlsx = require("xlsx");
 const ffmpeg = require("fluent-ffmpeg");
-var { BrowserWindow } = require("electron");
+// var { BrowserWindow } = require("electron");
 const fs = require("fs");
 const rimraf = require("rimraf");
 const path = require("path");
@@ -93,10 +93,11 @@ function video_cut(
   start_time,
   duration,
   out_file_path,
-  current_idx
+  current_idx,
+  win
 ) {
   // console.debug(out_file_path, current_idx);
-  let win = BrowserWindow.getFocusedWindow();
+  // let win = BrowserWindow.getFocusedWindow();
   let process_msg = {
     idx: 0,
     total: 0,

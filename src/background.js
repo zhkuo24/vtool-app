@@ -4,7 +4,7 @@ import { app, protocol, BrowserWindow } from "electron";
 import { createProtocol } from "vue-cli-plugin-electron-builder/lib";
 import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
 const isDevelopment = process.env.NODE_ENV !== "production";
-
+var win = null;
 // Scheme must be registered before the app is ready
 protocol.registerSchemesAsPrivileged([
   { scheme: "app", privileges: { secure: true, standard: true } }
@@ -12,7 +12,7 @@ protocol.registerSchemesAsPrivileged([
 
 async function createWindow() {
   // Create the browser window.
-  const win = new BrowserWindow({
+  win = new BrowserWindow({
     width: 800,
     height: 600,
     autoHideMenuBar: true,
@@ -97,6 +97,7 @@ ipcMain.on("video_cut", (event, msg) => {
     msg.start_time,
     msg.duration,
     msg.out_file_path,
-    msg.current_video_idx
+    msg.current_video_idx,
+    win
   );
 });
